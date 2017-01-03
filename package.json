@@ -1,0 +1,19 @@
+{
+    "name": "rsyncer",
+    "version": "0.0.1",
+
+    "description": "A mac based file system watcher and rsync combo for use with IDEs to sync changes to local files to a remote location on the fly",
+    "author": "Paul Visco",
+    "engines": {
+      "node": ">=0.10"
+    },
+    "dependencies": {
+      "rsync" : ">= 0.6.0",
+      "fpath" : ">= 0.1.5",
+      "fsevents" : ">= 1.0.15",
+      "commander" : ">= 2.9.0"
+    },
+    "bin": {
+      "rsyncer": "index.js"
+    }
+}
