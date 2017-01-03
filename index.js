@@ -1,10 +1,7 @@
 #!/usr/bin/env node
 
 var program = require('commander');
-var fsevents = require('fsevents');
-var exec = require('child_process').exec;
-var rsync = require('rsync');
-var fpath = require('path');
+var rsyncer = require('./rsyncer.js');
 
 var config = {
   localpath : "",
@@ -12,7 +9,8 @@ var config = {
   host : "",
   port : "",
   user : "",
-  verbose : false
+  verbose : false,
+  excludes : [".git", ".DS_Store"]
 };
 
 program
@@ -40,77 +38,15 @@ function getUserHome() {
 
 config.port = program.port || 22;
 config.verbose = program.verbose || false;
+
 if(config.verbose){
+  console.log('');
+  console.log('Using the following configuration.');
   for(var prop in config){
     console.log('config.'+prop+'='+config[prop]);
   }
+  console.log('');
 }
-
-//process.exit(1);
-
-var watcher = fsevents(config.localpath);
-
-watcher.on('fsevent', function(path, flags, id) {
-  //  console.log('fsevent');
-  //console.log(arguments);
-
-}); // RAW Event as emitted by OS-X
-watcher.on('change', function(path, info) {
-
-  console.log('change');
-  console.log(arguments);
-  var relativePath = (info.path+"").replace(config.localpath, "");
-  var remoteBaseDir = config.remotepath+fpath.dirname(relativePath);
-
-  if(info.event == "modified"){
-      var connection = new rsync()
-      .shell('ssh -p '+config.port)
-      .set('progress')
-      .flags('azv')
-      .exclude('.git')
-      .exclude('.DS_Store')
-      .set('--rsync-path="mkdir -p '+remoteBaseDir+' && rsync"')
-      .source(info.path)
-      .destination(config.user+'@'+config.host+":"+config.remotepath+relativePath);
-
-      // Execute the command
-      connection.execute(function(error, code, cmd) {
-          console.log(cmd);
-      });
-
-  } else if(info.event == "deleted" || info.event == "moved-out"){
-    if(relativePath){
-      var rm ="ssh "+config.user+"@"+config.host+" 'rm -rf "+(config.remotepath+relativePath)+"'";
-        console.log(rm);
-        exec(rm, function (err, stdout, stderr) {
-
-        });
-    }
-
-  } else if(info.event == "unknown"){
-    console.log("rsync "+remoteBaseDir);
-    var connection = new rsync()
-    .shell('ssh -p '+config.port)
-    .set('progress')
-    .flags('azv')
-    .exclude('.git')
-    .exclude('.DS_Store')
-    .set('--rsync-path="mkdir -p '+remoteBaseDir+' && rsync"')
-    .source(info.path)
-    .destination(config.user+'@'+config.host+":"+config.remotepath+relativePath);
-
-    // Execute the command
-    connection.execute(function(error, code, cmd) {
-        console.log(cmd);
-    });
-  }
-
-
-
-});
-
-// Common Event for all changes
-watcher.start() // To start observation
-//watcher.stop()  // To end observation
-
+rsyncer.createWatcher(config);
+rsyncer.watcher.start();
 //process.exit(1);
