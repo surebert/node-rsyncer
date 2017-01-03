@@ -31,7 +31,6 @@ exports.createWatcher = function(config){
       var remoteBaseDir = config.remotepath+fpath.dirname(relativePath);
 
       var connection = new rsync()
-        .shell('ssh -p '+config.port)
         .set('progress')
         .flags('azv')
         .exclude('.git')
@@ -40,6 +39,9 @@ exports.createWatcher = function(config){
         .source(info.path)
         .destination(config.user+'@'+config.host+":"+config.remotepath+relativePath);
 
+      if(config.port != 22){
+        connection.shell('ssh -p '+config.port)
+      }
       console.log("Uploading :"+path);
 
       // Execute the command
@@ -60,7 +62,11 @@ exports.createWatcher = function(config){
     } else if(info.event == "deleted" || info.event == "moved-out"){
       if(relativePath){
         var remoteFile = config.remotepath+relativePath;
-        var cmd ="ssh "+config.user+"@"+config.host+" 'rm -rf "+remoteFile+"'";
+        var cmd ="ssh ";
+        if(config.port != 22){
+          cmd +="-p "+config.port+" ";
+        }
+        cmd += config.user+"@"+config.host+" 'rm -rf "+remoteFile+"'";
         console.log("Deleting: "+path);
         exec(cmd, function (error, stdout, stderr) {
           if(error){
